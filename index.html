@@ -1376,27 +1376,49 @@ class HandTracker {
         if (this.active) return;
         try {
             document.getElementById('camera-container').style.display = 'block';
-            this.status.textContent = '加载高精度模型...';
+            this.status.textContent = '加载手势模型...';
 
             // 1. 初始化 MediaPipe Tasks Vision
             const vision = await FilesetResolver.forVisionTasks(
                 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
             );
+
+            // 选择模型版本：手机用 lite（轻量），桌面用 float16（高精度）
+            let modelPath = CFG.isMobile
+                ? 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/lite/1/hand_landmarker.task'
+                : 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+
+            // 尝试从本地缓存加载模型（仅手机）
+            if (CFG.isMobile) {
+                const cached = await this._loadModelFromCache();
+                if (cached) {
+                    this.status.textContent = '📦 从缓存加载...';
+                    modelPath = cached;
+                } else {
+                    this.status.textContent = '⬇️ 第一次加载，请稍候...';
+                }
+            }
+
             this.landmarker = await HandLandmarker.createFromOptions(vision, {
                 baseOptions: {
-                    modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-                    delegate: 'GPU',  // 优先GPU推理
+                    modelAssetPath: modelPath,
+                    delegate: CFG.isMobile ? 'CPU' : 'GPU',  // 手机用 CPU 避免 GPU 不稳定
                 },
                 runningMode: 'VIDEO',
                 numHands: 1,
-                minHandDetectionConfidence: 0.65,
-                minHandPresenceConfidence: 0.65,
-                minTrackingConfidence: 0.6,
+                minHandDetectionConfidence: CFG.isMobile ? 0.55 : 0.65,
+                minHandPresenceConfidence: CFG.isMobile ? 0.55 : 0.65,
+                minTrackingConfidence: CFG.isMobile ? 0.5 : 0.6,
             });
+
+            // 加载成功后缓存模型（仅手机首次）
+            if (CFG.isMobile && !await this._loadModelFromCache()) {
+                this._cacheModelAfterLoad();
+            }
 
             this.status.textContent = '开启摄像头...';
 
-            // 2. 开启摄像头 (提升到 640x480)
+            // 2. 开启摄像头
             this.stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     width:  { ideal: CFG.isMobile ? 320 : 640 },
@@ -1420,6 +1442,59 @@ class HandTracker {
             console.error('Hand tracking init failed:', e);
             this.status.textContent = '❌ ' + (e.message || '初始化失败');
         }
+    }
+
+    async _loadModelFromCache() {
+        if (!CFG.isMobile || !window.indexedDB) return null;
+        try {
+            return await new Promise((resolve, reject) => {
+                const req = window.indexedDB.open('MediaPipeModels', 1);
+                req.onerror = () => resolve(null);
+                req.onsuccess = (e) => {
+                    const db = e.target.result;
+                    const tx = db.transaction('models', 'readonly');
+                    const store = tx.objectStore('models');
+                    const get = store.get('hand_lite');
+                    get.onsuccess = () => {
+                        const blob = get.result?.blob;
+                        if (blob) {
+                            const url = URL.createObjectURL(blob);
+                            resolve(url);
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    get.onerror = () => resolve(null);
+                };
+                req.onupgradeneeded = (e) => {
+                    try {
+                        e.target.result.createObjectStore('models');
+                    } catch (err) {}
+                };
+            });
+        } catch (err) {
+            return null;
+        }
+    }
+
+    _cacheModelAfterLoad() {
+        // 异步缓存，不阻塞主流程
+        if (!window.indexedDB) return;
+        (async () => {
+            try {
+                const modelUrl = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/lite/1/hand_landmarker.task';
+                const resp = await fetch(modelUrl);
+                const blob = await resp.blob();
+                const req = window.indexedDB.open('MediaPipeModels', 1);
+                req.onsuccess = (e) => {
+                    const db = e.target.result;
+                    try {
+                        const store = db.transaction('models', 'readwrite').objectStore('models');
+                        store.put({ blob }, 'hand_lite');
+                    } catch (err) {}
+                };
+            } catch (err) {}
+        })();
     }
 
     stop() {
