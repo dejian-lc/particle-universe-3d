@@ -1450,20 +1450,29 @@ class HandTracker {
             );
 
             // 使用自托管模型：避免国内访问 storage.googleapis.com 失败
-            // 桌面部署页(index.html)与本地调试页(particle-universe-3d.html)目录层级不同，这里做一次兼容
-            const hostBase = location.pathname.includes('/particle-universe-3d/')
-                ? './mediapipe/models'
-                : './particle-universe-3d/mediapipe/models';
-            let modelPath = `${hostBase}/hand_landmarker_float16.task`;
+            const modelCandidates = [
+                './mediapipe/models/hand_landmarker_float16.task',
+                './particle-universe-3d/mediapipe/models/hand_landmarker_float16.task',
+            ];
+            let modelPath = modelCandidates[0];
+            for (const candidate of modelCandidates) {
+                try {
+                    const resp = await fetch(candidate, { method: 'HEAD' });
+                    if (resp.ok) { modelPath = candidate; break; }
+                } catch (err) {}
+            }
 
             // 尝试从本地缓存加载模型（仅手机）
             if (CFG.isMobile) {
-                const cached = await this._loadModelFromCache();
+                const canCache = !!window.indexedDB;
+                const cached = canCache ? await this._loadModelFromCache() : null;
                 if (cached) {
                     this.status.textContent = '📦 从缓存加载...';
                     modelPath = cached;
                 } else {
-                    this.status.textContent = '⬇️ 第一次加载，请稍候...';
+                    this.status.textContent = canCache
+                        ? '⬇️ 第一次加载，请稍候...'
+                        : '🌐 浏览器不支持离线缓存，正在联网加载...';
                 }
             }
 
@@ -1522,7 +1531,7 @@ class HandTracker {
                     const db = e.target.result;
                     const tx = db.transaction('models', 'readonly');
                     const store = tx.objectStore('models');
-                    const get = store.get('hand_lite');
+                    const get = store.get('hand_float16_v1');
                     get.onsuccess = () => {
                         const blob = get.result?.blob;
                         if (blob) {
@@ -1550,18 +1559,26 @@ class HandTracker {
         if (!window.indexedDB) return;
         (async () => {
             try {
-                const hostBase = location.pathname.includes('/particle-universe-3d/')
-                    ? './mediapipe/models'
-                    : './particle-universe-3d/mediapipe/models';
-                const modelUrl = `${hostBase}/hand_landmarker_float16.task`;
+                const modelCandidates = [
+                    './mediapipe/models/hand_landmarker_float16.task',
+                    './particle-universe-3d/mediapipe/models/hand_landmarker_float16.task',
+                ];
+                let modelUrl = modelCandidates[0];
+                for (const candidate of modelCandidates) {
+                    try {
+                        const headResp = await fetch(candidate, { method: 'HEAD' });
+                        if (headResp.ok) { modelUrl = candidate; break; }
+                    } catch (err) {}
+                }
                 const resp = await fetch(modelUrl);
+                if (!resp.ok) return;
                 const blob = await resp.blob();
                 const req = window.indexedDB.open('MediaPipeModels', 1);
                 req.onsuccess = (e) => {
                     const db = e.target.result;
                     try {
                         const store = db.transaction('models', 'readwrite').objectStore('models');
-                        store.put({ blob }, 'hand_lite');
+                        store.put({ blob }, 'hand_float16_v1');
                     } catch (err) {}
                 };
             } catch (err) {}
