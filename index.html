@@ -1489,24 +1489,40 @@ class HandTracker {
                 }
             }
 
-            this.landmarker = await HandLandmarker.createFromOptions(vision, {
-                baseOptions: {
-                    modelAssetPath: modelPath,
-                    delegate: CFG.isMobile ? 'CPU' : 'GPU',  // 手机用 CPU 避免 GPU 不稳定
-                },
-                runningMode: 'VIDEO',
-                numHands: 1,
-                minHandDetectionConfidence: CFG.isMobile ? 0.55 : 0.65,
-                minHandPresenceConfidence: CFG.isMobile ? 0.55 : 0.65,
-                minTrackingConfidence: CFG.isMobile ? 0.5 : 0.6,
-            });
+            let lastDelegateError = null;
+            let usedDelegate = 'CPU';
+            const delegateCandidates = ['GPU', 'CPU'];
+
+            for (const delegate of delegateCandidates) {
+                try {
+                    this.landmarker = await HandLandmarker.createFromOptions(vision, {
+                        baseOptions: {
+                            modelAssetPath: modelPath,
+                            delegate,
+                        },
+                        runningMode: 'VIDEO',
+                        numHands: 1,
+                        minHandDetectionConfidence: CFG.isMobile ? 0.55 : 0.65,
+                        minHandPresenceConfidence: CFG.isMobile ? 0.55 : 0.65,
+                        minTrackingConfidence: CFG.isMobile ? 0.5 : 0.6,
+                    });
+                    usedDelegate = delegate;
+                    break;
+                } catch (err) {
+                    lastDelegateError = err;
+                }
+            }
+
+            if (!this.landmarker) {
+                throw lastDelegateError || new Error('Hand landmarker create failed');
+            }
 
             // 加载成功后缓存模型（仅手机首次）
             if (CFG.isMobile && !await this._loadModelFromCache(modelCacheKey)) {
                 this._cacheModelAfterLoad(modelPath, modelCacheKey);
             }
 
-            this.status.textContent = '开启摄像头...';
+            this.status.textContent = `开启摄像头... (${usedDelegate})`;
 
             // 2. 开启摄像头
             this.stream = await navigator.mediaDevices.getUserMedia({
