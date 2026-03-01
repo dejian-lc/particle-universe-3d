@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>✨ 3D Particle Universe - 梦幻粒子交互系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -272,6 +275,74 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+        /* ── Mobile Responsive ── */
+        @media (max-width: 768px) {
+            #shape-selector {
+                top: 10px;
+                gap: 5px;
+                padding: 0 8px;
+                max-width: 100vw;
+            }
+            .shape-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+                border-radius: 18px;
+            }
+            #control-panel {
+                left: 8px;
+                right: 8px;
+                top: auto;
+                bottom: 12px;
+                transform: none;
+                width: auto;
+                max-height: 45vh;
+                overflow-y: auto;
+                padding: 14px 14px;
+                border-radius: 14px;
+            }
+            #control-panel.collapsed {
+                transform: translateY(calc(100% + 20px));
+            }
+            #panel-toggle {
+                left: auto;
+                right: 12px;
+                top: auto;
+                bottom: 12px;
+                transform: none;
+                border-radius: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+            #camera-container {
+                bottom: 10px;
+                right: 10px;
+                width: 140px;
+                height: 105px;
+                border-radius: 10px;
+            }
+            #text-input-bar {
+                top: auto !important;
+                bottom: 60vh;
+            }
+            #fps-counter {
+                top: auto;
+                bottom: 6px;
+                right: 8px;
+                font-size: 10px;
+            }
+        }
+        @media (max-width: 420px) {
+            .shape-btn {
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+            #control-panel {
+                max-height: 40vh;
+                padding: 10px 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -292,6 +363,15 @@
     <button class="shape-btn" data-shape="gift">🎁 礼物</button>
     <button class="shape-btn" data-shape="sphere">🌐 球体</button>
     <button class="shape-btn" data-shape="dna">🧬 DNA</button>
+    <button class="shape-btn" data-shape="saturn">🪐 土星</button>
+    <button class="shape-btn" data-shape="text" data-text="佟洛碟">✏️ 佟洛碟</button>
+</div>
+
+<!-- Custom Text Input (shown for text mode) -->
+<div id="text-input-bar" style="position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:100;display:none;gap:8px;align-items:center;">
+    <input type="text" id="custom-text" value="佟洛碟" maxlength="8" placeholder="输入文字..."
+        style="padding:7px 14px;border:1px solid rgba(255,255,255,0.25);background:rgba(10,10,30,0.7);backdrop-filter:blur(12px);color:#fff;border-radius:20px;font-size:14px;width:140px;outline:none;text-align:center;">
+    <button id="render-text-btn" style="padding:7px 16px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;border-radius:20px;cursor:pointer;font-size:13px;backdrop-filter:blur(12px);">渲染</button>
 </div>
 
 <!-- Control Panel -->
@@ -303,24 +383,28 @@
         <input type="range" id="particle-count" min="3000" max="50000" value="15000" step="1000">
     </div>
     <div class="control-group">
-        <div class="control-label">粒子大小 <span class="control-value" id="size-val">1.5</span></div>
-        <input type="range" id="particle-size" min="0.3" max="5" value="1.5" step="0.1">
+        <div class="control-label">粒子大小 <span class="control-value" id="size-val">2.0</span></div>
+        <input type="range" id="particle-size" min="0.3" max="5" value="2.0" step="0.1">
     </div>
     <div class="control-group">
         <div class="control-label">动画速度 <span class="control-value" id="speed-val">1.0</span></div>
         <input type="range" id="anim-speed" min="0.1" max="3" value="1" step="0.1">
     </div>
     <div class="control-group">
-        <div class="control-label">辉光强度 <span class="control-value" id="glow-val">1.0</span></div>
-        <input type="range" id="glow-intensity" min="0.1" max="3" value="1" step="0.1">
+        <div class="control-label">辉光强度 <span class="control-value" id="glow-val">0.65</span></div>
+        <input type="range" id="glow-intensity" min="0.1" max="3" value="0.65" step="0.1">
     </div>
     <div class="control-group">
-        <div class="control-label">聚合速度 <span class="control-value" id="lerp-val">0.03</span></div>
-        <input type="range" id="lerp-speed" min="0.005" max="0.15" value="0.03" step="0.005">
+        <div class="control-label">爆炸速度 <span class="control-value" id="explode-val">0.012</span></div>
+        <input type="range" id="explode-speed" min="0.003" max="0.06" value="0.012" step="0.001">
     </div>
     <div class="control-group">
-        <div class="control-label">泛光强度 <span class="control-value" id="bloom-val">1.5</span></div>
-        <input type="range" id="bloom-strength" min="0" max="4" value="1.5" step="0.1">
+        <div class="control-label">收缩速度 <span class="control-value" id="contract-val">0.045</span></div>
+        <input type="range" id="contract-speed" min="0.005" max="0.12" value="0.045" step="0.001">
+    </div>
+    <div class="control-group">
+        <div class="control-label">泛光强度 <span class="control-value" id="bloom-val">0.3</span></div>
+        <input type="range" id="bloom-strength" min="0" max="4" value="0.3" step="0.1">
     </div>
 
     <div class="control-group">
@@ -378,20 +462,30 @@ import { HandLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-
 // ═══════════════════════════════════════════════
 //  Configuration
 // ═══════════════════════════════════════════════
+// 移动端检测
+const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || (navigator.maxTouchPoints > 1 && window.innerWidth < 900);
+
 const CFG = {
-    particleCount: 15000,
-    particleSize: 1.5,
+    particleCount: isMobile ? 8000 : 15000,
+    particleSize: isMobile ? 2.5 : 2.0,
     animSpeed: 1.0,
-    glowIntensity: 1.0,
-    lerpSpeed: 0.03,
-    bloomStrength: 1.5,
-    bloomRadius: 0.4,
-    bloomThreshold: 0.08,
+    glowIntensity: 0.65,
+    explodeSpeed: 0.012,
+    contractSpeed: 0.045,
+    bloomStrength: isMobile ? 0 : 0.3,
+    bloomRadius: 0.2,
+    bloomThreshold: 0.5,
     autoRotate: true,
     showSnow: false,
     currentShape: 'tree',
     colorScheme: 'default',
     isExploded: false,
+    isMobile: isMobile,
+    // 手部跟踪状态
+    handX: 0.5,    // 归一化手掌 x (0~1, 0.5=中心)
+    handY: 0.5,    // 归一化手掌 y
+    handTracked: false,
 };
 
 // ═══════════════════════════════════════════════
@@ -422,21 +516,25 @@ function hsl2rgb(h, s, l) {
 // ═══════════════════════════════════════════════
 const Shapes = {
 
-    // ── 🎄 Christmas Tree (multi-layer, filled) ──
+    // ── 🎄 Christmas Tree (multi-layer, richly decorated) ──
     tree(count) {
         const P = [], C = [];
+        // 5 foliage layers for richer shape
         const layers = [
-            { yMin: -0.5, yMax: 2.0, rBot: 3.2, rTop: 2.2 },
-            { yMin:  1.2, yMax: 4.0, rBot: 2.6, rTop: 1.4 },
-            { yMin:  3.0, yMax: 6.0, rBot: 1.9, rTop: 0.25 },
+            { yMin: -1.0, yMax: 1.0,  rBot: 3.5, rTop: 2.8 },
+            { yMin:  0.3, yMax: 2.5,  rBot: 3.0, rTop: 2.0 },
+            { yMin:  1.8, yMax: 4.0,  rBot: 2.4, rTop: 1.3 },
+            { yMin:  3.2, yMax: 5.5,  rBot: 1.7, rTop: 0.6 },
+            { yMin:  4.8, yMax: 6.8,  rBot: 0.9, rTop: 0.1 },
         ];
-        const trunkN  = Math.floor(count * 0.04);
-        const starN   = Math.floor(count * 0.04);
-        const ornN    = Math.floor(count * 0.03);
-        const leafN   = count - trunkN - starN - ornN;
-        const perL    = Math.floor(leafN / layers.length);
+        const trunkN   = Math.floor(count * 0.035);
+        const starN    = Math.floor(count * 0.035);
+        const ornN     = Math.floor(count * 0.055);
+        const lightsN  = Math.floor(count * 0.03);
+        const leafN    = count - trunkN - starN - ornN - lightsN;
+        const perL     = Math.floor(leafN / layers.length);
 
-        // Foliage layers
+        // Foliage layers — surface-biased for visible silhouette
         for (let li = 0; li < layers.length; li++) {
             const L = layers[li];
             const n = li === layers.length - 1 ? leafN - perL * (layers.length - 1) : perL;
@@ -444,48 +542,92 @@ const Shapes = {
                 const t = Math.random();
                 const y = L.yMin + t * (L.yMax - L.yMin);
                 const maxR = L.rBot + (L.rTop - L.rBot) * t;
-                const r = maxR * Math.sqrt(Math.random()) * 0.97;
+                // Mix surface and volume particles (70% surface, 30% volume)
+                const surfaceBias = Math.random() < 0.7 ? 0.85 + Math.random() * 0.15 : Math.sqrt(Math.random());
+                const r = maxR * surfaceBias;
                 const a = Math.random() * Math.PI * 2;
                 P.push(r * Math.cos(a), y - 2.5, r * Math.sin(a));
-                const green = 0.28 + t * 0.35 + (Math.random() - 0.5) * 0.12;
-                C.push(0.04 + Math.random() * 0.06, green, 0.03 + Math.random() * 0.05);
+                // Rich green gradient: darker at bottom, brighter at top
+                const baseGreen = 0.22 + t * 0.4;
+                const variation = (Math.random() - 0.5) * 0.15;
+                C.push(
+                    0.02 + Math.random() * 0.08,
+                    baseGreen + variation,
+                    0.02 + Math.random() * 0.06
+                );
             }
         }
-        // Trunk
+
+        // Trunk — wider, more visible
         for (let i = 0; i < trunkN; i++) {
-            const y = -2.5 - Math.random() * 1.8;
-            const r = 0.45 * Math.sqrt(Math.random());
+            const y = -2.5 - Math.random() * 2.2;
+            const r = 0.55 * Math.sqrt(Math.random());
             const a = Math.random() * Math.PI * 2;
             P.push(r * Math.cos(a), y, r * Math.sin(a));
-            C.push(0.32 + Math.random() * 0.08, 0.18 + Math.random() * 0.06, 0.06);
+            C.push(0.35 + Math.random() * 0.1, 0.2 + Math.random() * 0.08, 0.07 + Math.random() * 0.04);
         }
-        // Ornaments
+
+        // Ornament balls — clustered in small spheres on the surface
+        const ornColors = [
+            [1.0, 0.12, 0.12],   // Red
+            [1.0, 0.82, 0.08],   // Gold
+            [0.15, 0.45, 1.0],   // Blue
+            [0.9, 0.1, 0.6],     // Magenta
+            [1.0, 0.5, 0.0],     // Orange
+            [0.8, 0.8, 0.95],    // Silver/White
+        ];
         for (let i = 0; i < ornN; i++) {
             const li = Math.floor(Math.random() * layers.length);
             const L = layers[li];
-            const t = Math.random();
+            const t = 0.2 + Math.random() * 0.6;
             const y = L.yMin + t * (L.yMax - L.yMin);
             const maxR = L.rBot + (L.rTop - L.rBot) * t;
-            const r = maxR * (0.5 + Math.random() * 0.45);
+            const r = maxR * (0.88 + Math.random() * 0.12);
             const a = Math.random() * Math.PI * 2;
-            P.push(r * Math.cos(a), y - 2.5, r * Math.sin(a));
-            const ornColors = [[1,0.15,0.15],[1,0.85,0.15],[0.2,0.5,1],[1,1,0.8]];
+            // Small sphere cluster around ornament center
+            const spread = 0.15;
+            P.push(
+                r * Math.cos(a) + (Math.random()-0.5)*spread,
+                y - 2.5 + (Math.random()-0.5)*spread,
+                r * Math.sin(a) + (Math.random()-0.5)*spread
+            );
             const oc = ornColors[Math.floor(Math.random() * ornColors.length)];
             C.push(oc[0], oc[1], oc[2]);
         }
-        // 3D Star topper
+
+        // String lights — spiral around the tree
+        for (let i = 0; i < lightsN; i++) {
+            const t = Math.random();
+            const layerIdx = Math.floor(t * layers.length);
+            const L = layers[Math.min(layerIdx, layers.length-1)];
+            const lt = Math.random();
+            const y = L.yMin + lt * (L.yMax - L.yMin);
+            const maxR = L.rBot + (L.rTop - L.rBot) * lt;
+            const spiralAngle = y * 2.5; // Spiral twist
+            const r = maxR * (0.92 + Math.random() * 0.08);
+            P.push(
+                r * Math.cos(spiralAngle) + (Math.random()-0.5)*0.08,
+                y - 2.5,
+                r * Math.sin(spiralAngle) + (Math.random()-0.5)*0.08
+            );
+            // Warm white/yellow glow for lights
+            const warm = 0.85 + Math.random() * 0.15;
+            C.push(warm, warm * (0.8 + Math.random()*0.2), warm * (0.4 + Math.random()*0.3));
+        }
+
+        // 3D Star topper — larger, more prominent
         for (let i = 0; i < starN; i++) {
             const angle = (i / starN) * Math.PI * 2;
             const seg = Math.PI * 2 / 5;
             const half = seg / 2;
             const local = ((angle % seg) + seg) % seg;
             let maxR;
-            if (local < half) { maxR = 0.7 * (1 - local / half) + 0.28 * (local / half); }
-            else { maxR = 0.28 * (1 - (local - half) / half) + 0.7 * ((local - half) / half); }
+            if (local < half) { maxR = 0.85 * (1 - local / half) + 0.3 * (local / half); }
+            else { maxR = 0.3 * (1 - (local - half) / half) + 0.85 * ((local - half) / half); }
             const r = maxR * Math.sqrt(Math.random());
-            const yOff = (Math.random() - 0.5) * 0.35;
-            P.push(r * Math.cos(angle), 3.7 + yOff, r * Math.sin(angle));
-            C.push(1.0, 0.82 + Math.random() * 0.18, 0.15 + Math.random() * 0.2);
+            const yOff = (Math.random() - 0.5) * 0.4;
+            P.push(r * Math.cos(angle), 4.5 + yOff, r * Math.sin(angle));
+            C.push(1.0, 0.85 + Math.random() * 0.15, 0.1 + Math.random() * 0.15);
         }
         return { positions: new Float32Array(P), colors: new Float32Array(C) };
     },
@@ -649,7 +791,161 @@ const Shapes = {
         return { positions: new Float32Array(P), colors: new Float32Array(C) };
     },
 
-    generate(shape, count) {
+    // ── 🪐 Saturn with rings ──
+    saturn(count) {
+        const P = [], C = [];
+        const planetR = 2.8;
+        const ringInner = 3.8, ringOuter = 6.2;
+        const ringTilt = 0.38;  // tilt angle in radians (~22°)
+
+        // Distribution: 45% planet body, 45% rings, 10% atmosphere glow
+        const planetN = Math.floor(count * 0.45);
+        const ringN   = Math.floor(count * 0.45);
+        const atmoN   = count - planetN - ringN;
+
+        // ── Planet body: gas giant with horizontal bands ──
+        for (let i = 0; i < planetN; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi   = Math.acos(2 * Math.random() - 1);
+            // Bias toward surface for visible silhouette
+            const r = planetR * (0.85 + Math.random() * 0.15);
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.cos(phi);
+            const z = r * Math.sin(phi) * Math.sin(theta);
+            P.push(x, y, z);
+
+            // Gas giant horizontal band coloring based on latitude (y)
+            const lat = y / planetR; // -1 to 1
+            const band = Math.sin(lat * 12.0) * 0.5 + 0.5;
+            const band2 = Math.sin(lat * 20.0 + 1.5) * 0.5 + 0.5;
+            // Warm amber/cream palette
+            const br = 0.65 + band * 0.25 + band2 * 0.08 + Math.random() * 0.05;
+            const bg = 0.50 + band * 0.22 + band2 * 0.10 + Math.random() * 0.05;
+            const bb = 0.28 + band * 0.12 + band2 * 0.08 + Math.random() * 0.04;
+            C.push(br, bg, bb);
+        }
+
+        // ── Rings: tilted disc with concentric banding + Cassini gap ──
+        for (let i = 0; i < ringN; i++) {
+            // Random radius within ring bounds
+            const r = ringInner + Math.random() * (ringOuter - ringInner);
+            const angle = Math.random() * Math.PI * 2;
+
+            // Flat disc in XZ plane, then tilt around X axis
+            const flatX = r * Math.cos(angle);
+            const flatZ = r * Math.sin(angle);
+            // Small thickness
+            const thickness = (Math.random() - 0.5) * 0.08;
+
+            // Apply tilt
+            const x = flatX;
+            const y = flatZ * Math.sin(ringTilt) + thickness * Math.cos(ringTilt);
+            const z = flatZ * Math.cos(ringTilt) - thickness * Math.sin(ringTilt);
+            P.push(x, y, z);
+
+            // Cassini division: gap at ~60% from inner edge
+            const ringPos = (r - ringInner) / (ringOuter - ringInner); // 0~1
+            const cassiniGap = Math.abs(ringPos - 0.55) < 0.04;
+
+            if (cassiniGap) {
+                // Very sparse/dark in the gap
+                C.push(0.15 + Math.random()*0.1, 0.12 + Math.random()*0.08, 0.08 + Math.random()*0.05);
+            } else {
+                // Ring color: varies from icy white/grey inner to golden/tan outer
+                const inner = 1.0 - ringPos;
+                const rr = 0.55 + inner * 0.35 + Math.random() * 0.08;
+                const rg = 0.48 + inner * 0.35 + Math.random() * 0.06;
+                const rb = 0.35 + inner * 0.30 + Math.random() * 0.05;
+                // Subtle concentric band variation
+                const bandVar = Math.sin(ringPos * 50.0) * 0.06;
+                C.push(rr + bandVar, rg + bandVar * 0.8, rb + bandVar * 0.5);
+            }
+        }
+
+        // ── Atmosphere glow: slightly larger shell around planet ──
+        for (let i = 0; i < atmoN; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi   = Math.acos(2 * Math.random() - 1);
+            const r = planetR * (1.02 + Math.random() * 0.12);
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.cos(phi);
+            const z = r * Math.sin(phi) * Math.sin(theta);
+            P.push(x, y, z);
+            // Soft blue-ish atmospheric glow
+            C.push(
+                0.45 + Math.random() * 0.15,
+                0.55 + Math.random() * 0.15,
+                0.80 + Math.random() * 0.15
+            );
+        }
+
+        return { positions: new Float32Array(P), colors: new Float32Array(C) };
+    },
+
+    // ── ✏️ Chinese Text (canvas pixel sampling) ──
+    text(count, str) {
+        const P = [], C = [];
+
+        // Offscreen canvas to render text
+        const cvs = document.createElement('canvas');
+        const res = 512;
+        cvs.width = res;
+        cvs.height = res;
+        const ctx = cvs.getContext('2d');
+
+        // Calculate font size to fit
+        const charCount = str.length;
+        const fontSize = Math.floor(res * 0.78 / Math.max(charCount, 1));
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, res, res);
+        ctx.fillStyle = '#fff';
+        // 优先用三种漂亮的中文字体
+        ctx.font = `${fontSize}px "Ma Shan Zheng", "ZCOOL XiaoWei", "ZCOOL KuaiLe", "STKaiti", "KaiTi", "Noto Serif SC", serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(str, res / 2, res / 2);
+
+        // Read pixels and collect bright positions
+        const imgData = ctx.getImageData(0, 0, res, res).data;
+        const brightPoints = [];
+        for (let y = 0; y < res; y++) {
+            for (let x = 0; x < res; x++) {
+                const idx = (y * res + x) * 4;
+                if (imgData[idx] > 100) {
+                    brightPoints.push({ x, y, b: imgData[idx] / 255 });
+                }
+            }
+        }
+
+        if (brightPoints.length === 0) {
+            return this.sphere(count);
+        }
+
+        const scale = 10.0 / res;
+        const depth = 1.0;
+
+        for (let i = 0; i < count; i++) {
+            const pt = brightPoints[Math.floor(Math.random() * brightPoints.length)];
+            const x = (pt.x - res/2) * scale + (Math.random()-0.5) * scale * 0.5;
+            const y = -(pt.y - res/2) * scale + (Math.random()-0.5) * scale * 0.5;
+            const z = (Math.random() - 0.5) * depth;
+
+            P.push(x, y, z);
+
+            // Per-character rainbow coloring
+            const charIdx = Math.floor((pt.x / res) * charCount);
+            const hue = (charIdx / charCount) * 0.75 + 0.0;
+            const saturation = 0.65 + Math.random() * 0.3;
+            const lightness  = 0.40 + pt.b * 0.25;
+            const rgb = hsl2rgb(hue % 1, saturation, lightness);
+            C.push(rgb[0], rgb[1], rgb[2]);
+        }
+
+        return { positions: new Float32Array(P), colors: new Float32Array(C) };
+    },
+
+    generate(shape, count, textStr) {
+        if (shape === 'text') return this.text(count, textStr || '佟洛碟');
         return (this[shape] || this.tree)(count);
     }
 };
@@ -679,7 +975,7 @@ class ParticleUniverse {
         this.renderer.setSize(innerWidth, innerHeight);
         this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.2;
+        this.renderer.toneMappingExposure = 0.7;
         document.getElementById('canvas-container').appendChild(this.renderer.domElement);
 
         // Camera
@@ -785,10 +1081,10 @@ class ParticleUniverse {
                     vCol = aColor;
                     vPh  = aPhase;
                     vec4 mv = modelViewMatrix * vec4(position, 1.0);
-                    float breathe = 1.0 + 0.22 * sin(uTime * 2.8 + aPhase * 6.2832);
-                    float twinkle = 0.82 + 0.18 * sin(uTime * 5.5 + aPhase * 12.566);
-                    gl_PointSize = aSize * breathe * twinkle * uPR * (300.0 / -mv.z);
-                    gl_PointSize = clamp(gl_PointSize, 1.0, 120.0);
+                    float breathe = 1.0 + 0.18 * sin(uTime * 2.8 + aPhase * 6.2832);
+                    float twinkle = 0.85 + 0.15 * sin(uTime * 5.5 + aPhase * 12.566);
+                    gl_PointSize = aSize * breathe * twinkle * uPR * (280.0 / -mv.z);
+                    gl_PointSize = clamp(gl_PointSize, 1.5, 140.0);
                     gl_Position = projectionMatrix * mv;
                 }`,
             fragmentShader: /* glsl */`
@@ -800,18 +1096,25 @@ class ParticleUniverse {
                     vec2 uv = gl_PointCoord - 0.5;
                     float d = length(uv);
                     if(d > 0.5) discard;
-                    float core  = exp(-d * 14.0);
-                    float inner = exp(-d * 5.5);
-                    float outer = exp(-d * 2.2);
-                    float glow  = (core * 0.55 + inner * 0.30 + outer * 0.15) * uGlow;
-                    float flicker = 0.88 + 0.12 * sin(uTime * 3.5 + vPh * 6.2832);
+                    // 清晰粒子，控制炫光
+                    float core  = exp(-d * 20.0);   // 清晰亮核
+                    float inner = exp(-d * 7.0);     // 柔和光晕
+                    float outer = exp(-d * 3.2);     // 轻微外圈
+                    float shape = core * 0.48 + inner * 0.32 + outer * 0.20;
+                    float glow  = shape * uGlow;
+                    float flicker = 0.90 + 0.10 * sin(uTime * 3.5 + vPh * 6.2832);
+                    // 微妙的色彩偏移
                     vec3 col = vCol + vec3(
-                        sin(uTime*1.2+vPh*6.28)*0.04,
-                        -sin(uTime*0.9+vPh*4.0)*0.03,
-                        cos(uTime*1.5+vPh*5.0)*0.04
+                        sin(uTime*1.2+vPh*6.28)*0.03,
+                        -sin(uTime*0.9+vPh*4.0)*0.02,
+                        cos(uTime*1.5+vPh*5.0)*0.03
                     );
-                    gl_FragColor = vec4(col * glow * flicker * 2.2, glow * flicker * 0.92);
+                    float brightness = glow * flicker;
+                    // 压制过曝：用 smoothstep 软压缩高亮
+                    float compress = smoothstep(0.0, 1.0, brightness);
+                    gl_FragColor = vec4(col * compress * 1.15, compress * 0.80);
                 }`,
+
             blending: THREE.AdditiveBlending,
             depthWrite: false,
             transparent: true,
@@ -848,9 +1151,10 @@ class ParticleUniverse {
 
     // ── Public API ──
 
-    switchShape(shape) {
+    switchShape(shape, textStr) {
         CFG.currentShape = shape;
-        const d = Shapes.generate(shape, CFG.particleCount);
+        this._currentText = textStr || this._currentText || '佟洛碟';
+        const d = Shapes.generate(shape, CFG.particleCount, this._currentText);
         this.targetPos = new Float32Array(d.positions);
         this.targetCol = new Float32Array(d.colors);
         if (CFG.colorScheme !== 'default') this._applyScheme(CFG.colorScheme);
@@ -870,13 +1174,13 @@ class ParticleUniverse {
             const x = pos[idx], y = pos[idx+1], z = pos[idx+2];
             const dist = Math.sqrt(x*x + y*y + z*z) || 0.1;
             const nx = x/dist, ny = y/dist, nz = z/dist;
-            const force = 9 + Math.random() * 14;
-            this.explodedPos[idx]   = nx * force + (Math.random()-0.5) * 5;
-            this.explodedPos[idx+1] = ny * force + (Math.random()-0.5) * 5;
-            this.explodedPos[idx+2] = nz * force + (Math.random()-0.5) * 5;
-            this.velocities[idx]   = (Math.random()-0.5) * 0.25;
-            this.velocities[idx+1] = (Math.random()-0.5) * 0.25;
-            this.velocities[idx+2] = (Math.random()-0.5) * 0.25;
+            const force = 8 + Math.random() * 10;
+            this.explodedPos[idx]   = nx * force + (Math.random()-0.5) * 4;
+            this.explodedPos[idx+1] = ny * force + (Math.random()-0.5) * 4;
+            this.explodedPos[idx+2] = nz * force + (Math.random()-0.5) * 4;
+            this.velocities[idx]   = (Math.random()-0.5) * 0.12;
+            this.velocities[idx+1] = (Math.random()-0.5) * 0.12;
+            this.velocities[idx+2] = (Math.random()-0.5) * 0.12;
         }
     }
 
@@ -885,7 +1189,7 @@ class ParticleUniverse {
         this.scene.remove(this.particles);
         this.geometry.dispose();
         this._createParticles();
-        this.switchShape(CFG.currentShape);
+        this.switchShape(CFG.currentShape, this._currentText);
     }
 
     updateSize(s) {
@@ -952,20 +1256,20 @@ class ParticleUniverse {
         // Uniforms
         this.material.uniforms.uTime.value = t * CFG.animSpeed;
         this.material.uniforms.uGlow.value = CFG.glowIntensity;
-        this.bloom.strength = CFG.bloomStrength * Math.max(CFG.glowIntensity * 0.6, 0.3);
+        this.bloom.strength = CFG.bloomStrength * Math.max(CFG.glowIntensity * 0.25, 0.1);
 
         // Lerp positions & colors
         const pos    = this.geometry.attributes.position.array;
         const col    = this.geometry.attributes.aColor.array;
         const count  = CFG.particleCount;
         const target = CFG.isExploded ? this.explodedPos : this.targetPos;
-        const lerp   = CFG.isExploded ? CFG.lerpSpeed * 1.5 : CFG.lerpSpeed;
+        const lerp   = CFG.isExploded ? CFG.explodeSpeed : CFG.contractSpeed;
         const cLerp  = 0.025;
 
         if (target) {
             for (let i = 0; i < count; i++) {
                 const i3 = i * 3;
-                // Position
+                // Position lerp
                 pos[i3]   += (target[i3]   - pos[i3])   * lerp;
                 pos[i3+1] += (target[i3+1] - pos[i3+1]) * lerp;
                 pos[i3+2] += (target[i3+2] - pos[i3+2]) * lerp;
@@ -1010,6 +1314,18 @@ class ParticleUniverse {
                 if (sp[i*3+1] < -6) { sp[i*3+1] = 18; sp[i*3] = (Math.random()-0.5)*40; }
             }
             this.snow.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // 手部跟踪旋转 — 平滑插值到目标角度
+        if (CFG.handTracked) {
+            const targetRotY = (CFG.handX - 0.5) * Math.PI * 0.6;   // 左右 ±54°
+            const targetRotX = (CFG.handY - 0.5) * Math.PI * 0.35;  // 上下 ±31°
+            this.particles.rotation.y += (targetRotY - this.particles.rotation.y) * 0.04;
+            this.particles.rotation.x += (targetRotX - this.particles.rotation.x) * 0.04;
+        } else {
+            // 手离开后缓慢回正
+            this.particles.rotation.y += (0 - this.particles.rotation.y) * 0.02;
+            this.particles.rotation.x += (0 - this.particles.rotation.x) * 0.02;
         }
 
         // Controls
@@ -1082,7 +1398,11 @@ class HandTracker {
 
             // 2. 开启摄像头 (提升到 640x480)
             this.stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+                video: {
+                    width:  { ideal: CFG.isMobile ? 320 : 640 },
+                    height: { ideal: CFG.isMobile ? 240 : 480 },
+                    facingMode: 'user'
+                }
             });
             this.video.srcObject = this.stream;
             await this.video.play();
@@ -1109,6 +1429,7 @@ class HandTracker {
         this.active = false;
         this._gestureBuffer = [];
         this._currentGesture = 'none';
+        CFG.handTracked = false;
         document.getElementById('camera-container').style.display = 'none';
         this.universe.setExplosion(false);
     }
@@ -1140,8 +1461,15 @@ class HandTracker {
             // 手势识别
             const gesture = this._classifyGesture(lm);
             this._pushGesture(gesture);
+
+            // 手掌位置跟踪（用手掌中心 lm[9] 作为参考点）
+            const palm = lm[9];
+            CFG.handX = 1.0 - palm.x;  // 镜像翻转
+            CFG.handY = palm.y;
+            CFG.handTracked = true;
         } else {
             this._pushGesture('none');
+            CFG.handTracked = false;
         }
 
         // 应用防抖后的手势结果
@@ -1282,12 +1610,32 @@ class UIController {
     }
 
     _shapes() {
+        const textBar = document.getElementById('text-input-bar');
         document.querySelectorAll('.shape-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                this.universe.switchShape(btn.dataset.shape);
+                const shape = btn.dataset.shape;
+                if (shape === 'text') {
+                    textBar.style.display = 'flex';
+                    const txt = btn.dataset.text || document.getElementById('custom-text').value || '佟洛碟';
+                    this.universe.switchShape('text', txt);
+                } else {
+                    textBar.style.display = 'none';
+                    this.universe.switchShape(shape);
+                }
             });
+        });
+        // Render custom text
+        document.getElementById('render-text-btn').addEventListener('click', () => {
+            const txt = document.getElementById('custom-text').value.trim();
+            if (txt) this.universe.switchShape('text', txt);
+        });
+        document.getElementById('custom-text').addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const txt = e.target.value.trim();
+                if (txt) this.universe.switchShape('text', txt);
+            }
         });
     }
 
@@ -1301,7 +1649,8 @@ class UIController {
         bind('particle-size',  'size-val',  v => this.universe.updateSize(+v));
         bind('anim-speed',     'speed-val', v => { CFG.animSpeed = +v; });
         bind('glow-intensity', 'glow-val',  v => { CFG.glowIntensity = +v; });
-        bind('lerp-speed',     'lerp-val',  v => { CFG.lerpSpeed = +v; });
+        bind('explode-speed',  'explode-val',  v => { CFG.explodeSpeed = +v; });
+        bind('contract-speed', 'contract-val', v => { CFG.contractSpeed = +v; });
         bind('bloom-strength', 'bloom-val', v => { CFG.bloomStrength = +v; });
     }
 
@@ -1373,6 +1722,26 @@ class UIController {
 const universe = new ParticleUniverse();
 const tracker  = new HandTracker(universe);
 const ui       = new UIController(universe, tracker);
+
+// 自动开启手势追踪（仅桌面端）
+if (!CFG.isMobile) {
+    setTimeout(() => {
+        tracker.start();
+        const camBtn = document.getElementById('toggle-camera');
+        camBtn.classList.add('active');
+        camBtn.textContent = '📷 关闭手势追踪';
+    }, 500);
+}
+
+// 移动端：同步滑块默认值到实际CFG
+if (CFG.isMobile) {
+    const countSlider = document.getElementById('particle-count');
+    const countVal    = document.getElementById('count-val');
+    const bloomSlider = document.getElementById('bloom-strength');
+    const bloomVal    = document.getElementById('bloom-val');
+    if (countSlider) { countSlider.value = CFG.particleCount; countVal.textContent = CFG.particleCount; }
+    if (bloomSlider) { bloomSlider.value = CFG.bloomStrength; bloomVal.textContent = CFG.bloomStrength; }
+}
 
 </script>
 </body>
