@@ -533,13 +533,13 @@ const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/
     || (navigator.maxTouchPoints > 1 && window.innerWidth < 900);
 
 const CFG = {
-    particleCount: isMobile ? 8000 : 15000,
-    particleSize: isMobile ? 2.5 : 2.0,
+    particleCount: 15000,
+    particleSize: 2.0,
     animSpeed: 1.0,
     glowIntensity: 0.65,
     explodeSpeed: 0.012,
     contractSpeed: 0.045,
-    bloomStrength: isMobile ? 0 : 0.3,
+    bloomStrength: 0.3,
     bloomRadius: 0.2,
     bloomThreshold: 0.5,
     autoRotate: true,
