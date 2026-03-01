@@ -1449,10 +1449,12 @@ class HandTracker {
                 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
             );
 
-            // 选择模型版本：手机用 lite（轻量），桌面用 float16（高精度）
-            let modelPath = CFG.isMobile
-                ? 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/lite/1/hand_landmarker.task'
-                : 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+            // 使用自托管模型：避免国内访问 storage.googleapis.com 失败
+            // 桌面部署页(index.html)与本地调试页(particle-universe-3d.html)目录层级不同，这里做一次兼容
+            const hostBase = location.pathname.includes('/particle-universe-3d/')
+                ? './mediapipe/models'
+                : './particle-universe-3d/mediapipe/models';
+            let modelPath = `${hostBase}/hand_landmarker_float16.task`;
 
             // 尝试从本地缓存加载模型（仅手机）
             if (CFG.isMobile) {
