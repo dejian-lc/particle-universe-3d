@@ -1550,7 +1550,10 @@ class HandTracker {
         if (!window.indexedDB) return;
         (async () => {
             try {
-                const modelUrl = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/lite/1/hand_landmarker.task';
+                const hostBase = location.pathname.includes('/particle-universe-3d/')
+                    ? './mediapipe/models'
+                    : './particle-universe-3d/mediapipe/models';
+                const modelUrl = `${hostBase}/hand_landmarker_float16.task`;
                 const resp = await fetch(modelUrl);
                 const blob = await resp.blob();
                 const req = window.indexedDB.open('MediaPipeModels', 1);
