@@ -1449,23 +1449,36 @@ class HandTracker {
                 './mediapipe/tasks-vision/wasm'
             );
 
-            // 使用自托管模型：避免国内访问 storage.googleapis.com 失败
-            const modelCandidates = [
-                './mediapipe/models/hand_landmarker_float16.task',
-                './particle-universe-3d/mediapipe/models/hand_landmarker_float16.task',
-            ];
-            let modelPath = modelCandidates[0];
+            // 使用自托管模型：手机优先 lite，桌面使用 float16
+            const modelCandidates = CFG.isMobile
+                ? [
+                    { path: './mediapipe/models/hand_landmarker_lite.task', cacheKey: 'hand_lite_v1' },
+                    { path: './particle-universe-3d/mediapipe/models/hand_landmarker_lite.task', cacheKey: 'hand_lite_v1' },
+                    { path: './mediapipe/models/hand_landmarker_float16.task', cacheKey: 'hand_float16_v1' },
+                    { path: './particle-universe-3d/mediapipe/models/hand_landmarker_float16.task', cacheKey: 'hand_float16_v1' },
+                ]
+                : [
+                    { path: './mediapipe/models/hand_landmarker_float16.task', cacheKey: 'hand_float16_v1' },
+                    { path: './particle-universe-3d/mediapipe/models/hand_landmarker_float16.task', cacheKey: 'hand_float16_v1' },
+                ];
+
+            let modelPath = modelCandidates[0].path;
+            let modelCacheKey = modelCandidates[0].cacheKey;
             for (const candidate of modelCandidates) {
                 try {
-                    const resp = await fetch(candidate, { method: 'HEAD' });
-                    if (resp.ok) { modelPath = candidate; break; }
+                    const resp = await fetch(candidate.path, { method: 'HEAD' });
+                    if (resp.ok) {
+                        modelPath = candidate.path;
+                        modelCacheKey = candidate.cacheKey;
+                        break;
+                    }
                 } catch (err) {}
             }
 
             // 尝试从本地缓存加载模型（仅手机）
             if (CFG.isMobile) {
                 const canCache = !!window.indexedDB;
-                const cached = canCache ? await this._loadModelFromCache() : null;
+                const cached = canCache ? await this._loadModelFromCache(modelCacheKey) : null;
                 if (cached) {
                     this.status.textContent = '📦 从缓存加载...';
                     modelPath = cached;
@@ -1489,8 +1502,8 @@ class HandTracker {
             });
 
             // 加载成功后缓存模型（仅手机首次）
-            if (CFG.isMobile && !await this._loadModelFromCache()) {
-                this._cacheModelAfterLoad();
+            if (CFG.isMobile && !await this._loadModelFromCache(modelCacheKey)) {
+                this._cacheModelAfterLoad(modelPath, modelCacheKey);
             }
 
             this.status.textContent = '开启摄像头...';
@@ -1521,7 +1534,7 @@ class HandTracker {
         }
     }
 
-    async _loadModelFromCache() {
+    async _loadModelFromCache(cacheKey = 'hand_float16_v1') {
         if (!CFG.isMobile || !window.indexedDB) return null;
         try {
             return await new Promise((resolve, reject) => {
@@ -1531,7 +1544,7 @@ class HandTracker {
                     const db = e.target.result;
                     const tx = db.transaction('models', 'readonly');
                     const store = tx.objectStore('models');
-                    const get = store.get('hand_float16_v1');
+                    const get = store.get(cacheKey);
                     get.onsuccess = () => {
                         const blob = get.result?.blob;
                         if (blob) {
@@ -1554,22 +1567,11 @@ class HandTracker {
         }
     }
 
-    _cacheModelAfterLoad() {
+    _cacheModelAfterLoad(modelUrl, cacheKey = 'hand_float16_v1') {
         // 异步缓存，不阻塞主流程
         if (!window.indexedDB) return;
         (async () => {
             try {
-                const modelCandidates = [
-                    './mediapipe/models/hand_landmarker_float16.task',
-                    './particle-universe-3d/mediapipe/models/hand_landmarker_float16.task',
-                ];
-                let modelUrl = modelCandidates[0];
-                for (const candidate of modelCandidates) {
-                    try {
-                        const headResp = await fetch(candidate, { method: 'HEAD' });
-                        if (headResp.ok) { modelUrl = candidate; break; }
-                    } catch (err) {}
-                }
                 const resp = await fetch(modelUrl);
                 if (!resp.ok) return;
                 const blob = await resp.blob();
@@ -1578,7 +1580,7 @@ class HandTracker {
                     const db = e.target.result;
                     try {
                         const store = db.transaction('models', 'readwrite').objectStore('models');
-                        store.put({ blob }, 'hand_float16_v1');
+                        store.put({ blob }, cacheKey);
                     } catch (err) {}
                 };
             } catch (err) {}
