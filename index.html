@@ -1937,15 +1937,13 @@ const universe = new ParticleUniverse();
 const tracker  = new HandTracker(universe);
 const ui       = new UIController(universe, tracker);
 
-// 自动开启手势追踪（仅桌面端）
-if (!CFG.isMobile) {
-    setTimeout(() => {
-        tracker.start();
-        const camBtn = document.getElementById('toggle-camera');
-        camBtn.classList.add('active');
-        camBtn.textContent = '📷 关闭手势追踪';
-    }, 500);
-}
+// 自动开启手势追踪（桌面端 + 移动端均默认开启）
+setTimeout(() => {
+    tracker.start();
+    const camBtn = document.getElementById('toggle-camera');
+    camBtn.classList.add('active');
+    camBtn.textContent = '📷 关闭手势追踪';
+}, 500);
 
 // 移动端：同步滑块默认值到实际CFG
 if (CFG.isMobile) {
